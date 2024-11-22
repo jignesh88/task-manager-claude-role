@@ -97,13 +97,6 @@ public class TaskService {
             int size,
             String sort
     ) {
-        if (page < 0) {
-            throw new InvalidTaskException("Page number cannot be negative");
-        }
-        if (size < 1 || size > 100) {
-            throw new InvalidTaskException("Page size must be between 1 and 100");
-        }
-
         // Create a list of dummy tasks
         List<Task> dummyTasks = List.of(
                 DUMMY_TASK,
