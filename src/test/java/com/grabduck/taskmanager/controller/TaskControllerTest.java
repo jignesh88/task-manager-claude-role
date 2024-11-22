@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grabduck.taskmanager.domain.Task;
 import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
+import com.grabduck.taskmanager.domain.SortField;
+import com.grabduck.taskmanager.domain.SortDirection;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import com.grabduck.taskmanager.service.TaskService;
@@ -16,13 +18,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -188,22 +193,27 @@ class TaskControllerTest {
     @Test
     void getTasks_ValidParameters_ReturnsPagedResponse() throws Exception {
         com.grabduck.taskmanager.domain.Page<Task> page = new com.grabduck.taskmanager.domain.Page<>(
-                new java.util.ArrayList<>(java.util.Set.of(testTask)),
+                List.of(testTask),
                 1L,
                 1,
                 10,
                 0
         );
 
-        when(taskService.getTasks(any(), any(), any(), any(), eq(0), eq(10), any())).thenReturn(page);
+        when(taskService.getTasks(
+                any(), any(), any(), any(), eq(0), eq(10),
+                argThat(sort -> sort.field() == SortField.DUE_DATE && sort.direction() == SortDirection.ASC)
+        )).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/tasks")
                         .param("page", "0")
-                        .param("size", "10"))
+                        .param("size", "10")
+                        .param("sort", "dueDate,asc"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(1)))
                 .andExpect(jsonPath("$.totalElements", is(1)))
-                .andExpect(jsonPath("$.content[0].name", is("Test Task")));
+                .andExpect(jsonPath("$.totalPages", is(1)))
+                .andExpect(jsonPath("$.size", is(10)))
+                .andExpect(jsonPath("$.page", is(0)));
     }
 
     @Test
@@ -225,7 +235,7 @@ class TaskControllerTest {
         );
 
         com.grabduck.taskmanager.domain.Page<Task> page = new com.grabduck.taskmanager.domain.Page<>(
-                new java.util.ArrayList<>(java.util.Set.of(filteredTask)),
+                List.of(filteredTask),
                 1L,
                 1,
                 10,
@@ -253,5 +263,29 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.content[0].name", is("Filtered Task")))
                 .andExpect(jsonPath("$.content[0].status", is("NOT_STARTED")))
                 .andExpect(jsonPath("$.content[0].priority", is("HIGH")));
+    }
+
+    @Test
+    void getTasks_InvalidSortField_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/tasks")
+                        .param("sort", "invalidField,asc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Unknown sort field")));
+    }
+
+    @Test
+    void getTasks_InvalidSortDirection_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/tasks")
+                        .param("sort", "dueDate,invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Unknown sort direction")));
+    }
+
+    @Test
+    void getTasks_InvalidSortFormat_ReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/tasks")
+                        .param("sort", "invalid-format"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Sort string must be in format 'field,direction'")));
     }
 }

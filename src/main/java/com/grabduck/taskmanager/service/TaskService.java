@@ -4,6 +4,7 @@ import com.grabduck.taskmanager.domain.Task;
 import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.domain.Page;
+import com.grabduck.taskmanager.domain.SortOption;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import org.springframework.stereotype.Service;
@@ -95,7 +96,7 @@ public class TaskService {
             String tag,
             int page,
             int size,
-            String sort
+            SortOption sortOption
     ) {
         // Create a list of dummy tasks
         List<Task> dummyTasks = List.of(

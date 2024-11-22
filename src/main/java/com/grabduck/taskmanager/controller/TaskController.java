@@ -3,6 +3,7 @@ package com.grabduck.taskmanager.controller;
 import com.grabduck.taskmanager.domain.Task;
 import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
+import com.grabduck.taskmanager.domain.SortOption;
 import com.grabduck.taskmanager.dto.PagedResponseDto;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.service.TaskService;
@@ -70,8 +71,16 @@ public class TaskController {
         if (page < 0) {
             throw new InvalidTaskException("Page number cannot be negative");
         }
+
+        SortOption sortOption;
+        try {
+            sortOption = SortOption.fromString(sort);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidTaskException("Invalid sort parameter: " + e.getMessage());
+        }
+
         return ResponseEntity.ok(PagedResponseDto.from(
-                taskService.getTasks(search, status, priority, tag, page, size, sort)
+                taskService.getTasks(search, status, priority, tag, page, size, sortOption)
         ));
     }
 
