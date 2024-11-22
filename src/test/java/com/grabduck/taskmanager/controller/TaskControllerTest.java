@@ -1,11 +1,9 @@
 package com.grabduck.taskmanager.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grabduck.taskmanager.domain.Page;
 import com.grabduck.taskmanager.domain.Task;
 import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
-import com.grabduck.taskmanager.dto.PagedResponseDto;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import com.grabduck.taskmanager.service.TaskService;
@@ -18,7 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 
@@ -190,8 +187,8 @@ class TaskControllerTest {
 
     @Test
     void getTasks_ValidParameters_ReturnsPagedResponse() throws Exception {
-        Page<Task> page = new Page<>(
-                new ArrayList<>(Set.of(testTask)),
+        com.grabduck.taskmanager.domain.Page<Task> page = new com.grabduck.taskmanager.domain.Page<>(
+                new java.util.ArrayList<>(java.util.Set.of(testTask)),
                 1L,
                 1,
                 10,
@@ -227,8 +224,8 @@ class TaskControllerTest {
                 Set.of("filtered", "important")
         );
 
-        Page<Task> page = new Page<>(
-                new ArrayList<>(Set.of(filteredTask)),
+        com.grabduck.taskmanager.domain.Page<Task> page = new com.grabduck.taskmanager.domain.Page<>(
+                new java.util.ArrayList<>(java.util.Set.of(filteredTask)),
                 1L,
                 1,
                 10,
