@@ -58,6 +58,7 @@ src/main/java/com/grabduck/taskmanager/
 The project is organized into feature branches, each representing a significant development milestone:
 
 - `feature/task-api-foundation`: Initial API implementation with core task management functionality
+  - [Watch the development video](https://youtu.be/BPaF68MU4aM?si=7NnMAw4zf2Ed6Zbe) to see how this foundation was built using Cascade AI Agent
 - More branches will be added as new features are developed
 
 ## Getting Started
