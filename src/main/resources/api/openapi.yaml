@@ -1,0 +1,245 @@
+openapi: 3.0.3
+info:
+  title: Task Manager API
+  description: API for managing tasks with CRUD operations, filtering, and search capabilities
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/v1/tasks:
+    post:
+      summary: Create a new task
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+            example:
+              name: "Complete project presentation"
+              description: "Prepare and review final presentation for the client"
+              dueDate: "2024-12-01T15:00:00Z"
+              priority: "HIGH"
+              tags: ["presentation", "client"]
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    get:
+      summary: Get tasks with filtering, search, and pagination
+      operationId: getTasks
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Full-text search query
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [NOT_STARTED, IN_PROGRESS, PENDING, COMPLETED, CANCELLED]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [URGENT, HIGH, MEDIUM, LOW]
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter by tag
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [
+              "dueDate,asc", "dueDate,desc",
+              "name,asc", "name,desc",
+              "priority,asc", "priority,desc",
+              "status,asc", "status,desc"
+            ]
+            default: "dueDate,asc"
+          description: Sort field and direction combined (field,direction)
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedTaskResponse'
+
+  /api/v1/tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    
+    get:
+      summary: Get task by ID
+      operationId: getTaskById
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    put:
+      summary: Update existing task
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+            example:
+              name: "Updated task name"
+              description: "Updated task description"
+              dueDate: "2024-12-01T15:00:00Z"
+              status: "IN_PROGRESS"
+              priority: "HIGH"
+              tags: ["updated", "important"]
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    delete:
+      summary: Delete task
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Task deleted successfully
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Task:
+      type: object
+      required:
+        - name
+        - priority
+        - tags
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        dueDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [NOT_STARTED, IN_PROGRESS, PENDING, COMPLETED, CANCELLED]
+          default: NOT_STARTED
+        priority:
+          type: string
+          enum: [URGENT, HIGH, MEDIUM, LOW]
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+
+    PagedTaskResponse:
+      type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - size
+        - page
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        page:
+          type: integer
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
