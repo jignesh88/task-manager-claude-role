@@ -6,47 +6,25 @@ import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.domain.Page;
 import com.grabduck.taskmanager.domain.SortOption;
 import com.grabduck.taskmanager.domain.SortDirection;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Repository
 @Slf4j
+@Repository
+@RequiredArgsConstructor
 public class InMemoryTaskRepository implements TaskRepository {
     private final Map<UUID, Task> tasks = new ConcurrentHashMap<>();
+    private final TaskDataProvider taskDataProvider;
 
-    private static final Task DUMMY_TASK = Task.createNew(
-            "Sample Task",
-            "This is a sample task description",
-            LocalDateTime.now().plusDays(7),
-            TaskPriority.HIGH,
-            Set.of("sample", "dummy")
-    );
-
-    public InMemoryTaskRepository() {
-        // Initialize with some dummy data
-        Task task1 = DUMMY_TASK;
-        Task task2 = Task.createNew(
-                "Another Task",
-                "Another task description",
-                LocalDateTime.now().plusDays(3),
-                TaskPriority.MEDIUM,
-                Set.of("work", "important")
-        );
-        Task task3 = Task.createNew(
-                "Urgent Task",
-                "This needs immediate attention",
-                LocalDateTime.now().plusDays(1),
-                TaskPriority.URGENT,
-                Set.of("urgent", "critical")
-        );
-
-        tasks.put(task1.id(), task1);
-        tasks.put(task2.id(), task2);
-        tasks.put(task3.id(), task3);
+    @jakarta.annotation.PostConstruct
+    public void init() {
+        log.info("Initializing InMemoryTaskRepository with pre-generated tasks");
+        taskDataProvider.getTasks().forEach(task -> tasks.put(task.id(), task));
+        log.info("Loaded {} tasks into repository", tasks.size());
     }
 
     @Override
@@ -80,6 +58,7 @@ public class InMemoryTaskRepository implements TaskRepository {
     ) {
         log.debug("Finding tasks with search: {}, status: {}, priority: {}, tag: {}, page: {}, size: {}, sortOption: {}",
                 search, status, priority, tag, page, size, sortOption);
+
         List<Task> filteredTasks = tasks.values().stream()
                 .filter(task -> matchesSearch(task, search))
                 .filter(task -> matchesStatus(task, status))
@@ -87,10 +66,8 @@ public class InMemoryTaskRepository implements TaskRepository {
                 .filter(task -> matchesTag(task, tag))
                 .toList();
 
-        // Apply sorting
         List<Task> sortedTasks = applySorting(filteredTasks, sortOption);
 
-        // Apply pagination
         int start = page * size;
         int end = Math.min(start + size, sortedTasks.size());
         List<Task> pagedTasks = start < sortedTasks.size() 
