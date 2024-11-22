@@ -8,53 +8,38 @@ import com.grabduck.taskmanager.domain.SortOption;
 import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
+import com.grabduck.taskmanager.repository.TaskRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class TaskService {
 
-    private static final Task DUMMY_TASK = Task.createNew(
-            "Sample Task",
-            "This is a sample task description",
-            LocalDateTime.now().plusDays(7),
-            TaskPriority.HIGH,
-            Set.of("sample", "dummy")
-    );
+    private final TaskRepository taskRepository;
 
     public Task createTask(CreateTaskRequest request) {
         validateCreateTaskRequest(request);
-        return Task.createNew(
+        Task task = Task.createNew(
                 request.name(),
                 request.description(),
                 request.dueDate(),
                 request.priority(),
                 request.tags()
         );
+        return taskRepository.save(task);
     }
 
     public Task getTaskById(UUID taskId) {
         if (taskId == null) {
             throw new InvalidTaskException("Task ID cannot be null");
         }
-        // In a real implementation, we would check if the task exists in the database
-        // For now, we'll simulate a not found scenario for a specific ID
-        if (taskId.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
-            throw new TaskNotFoundException(taskId);
-        }
-        return new Task(
-                taskId,
-                DUMMY_TASK.name(),
-                DUMMY_TASK.description(),
-                DUMMY_TASK.dueDate(),
-                DUMMY_TASK.status(),
-                DUMMY_TASK.priority(),
-                DUMMY_TASK.tags()
-        );
+        return taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskNotFoundException(taskId));
     }
 
     public Task updateTask(UUID taskId, Task task) {
@@ -62,32 +47,26 @@ public class TaskService {
             throw new InvalidTaskException("Task ID cannot be null");
         }
         validateTask(task);
-        // In a real implementation, we would check if the task exists in the database
-        // For now, we'll simulate a not found scenario for a specific ID
-        if (taskId.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
+        
+        // Verify task exists
+        if (!taskRepository.findById(taskId).isPresent()) {
             throw new TaskNotFoundException(taskId);
         }
-        return new Task(
-                taskId,
-                task.name(),
-                task.description(),
-                task.dueDate(),
-                task.status(),
-                task.priority(),
-                task.tags()
-        );
+        
+        return taskRepository.save(task);
     }
 
     public void deleteTask(UUID taskId) {
         if (taskId == null) {
             throw new InvalidTaskException("Task ID cannot be null");
         }
-        // In a real implementation, we would check if the task exists in the database
-        // For now, we'll simulate a not found scenario for a specific ID
-        if (taskId.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
+        
+        // Verify task exists before deletion
+        if (!taskRepository.findById(taskId).isPresent()) {
             throw new TaskNotFoundException(taskId);
         }
-        // Dummy implementation - no action needed
+        
+        taskRepository.deleteById(taskId);
     }
 
     public Page<Task> getTasks(
@@ -99,39 +78,7 @@ public class TaskService {
             int size,
             SortOption sortOption
     ) {
-        // Create a list of dummy tasks
-        List<Task> dummyTasks = List.of(
-                DUMMY_TASK,
-                Task.createNew(
-                        "Another Task",
-                        "Another task description",
-                        LocalDateTime.now().plusDays(3),
-                        TaskPriority.MEDIUM,
-                        Set.of("work", "important")
-                ),
-                Task.createNew(
-                        "Urgent Task",
-                        "This needs immediate attention",
-                        LocalDateTime.now().plusDays(1),
-                        TaskPriority.URGENT,
-                        Set.of("urgent", "critical")
-                )
-        );
-
-        // In a real implementation, we would:
-        // 1. Convert the sort string to proper sort criteria
-        // 2. Apply filters based on search, status, priority, and tag
-        // 3. Apply pagination
-        // 4. Return actual data from the database
-
-        // For now, return dummy data
-        return new Page<>(
-                dummyTasks,
-                dummyTasks.size(),
-                1,
-                size,
-                page
-        );
+        return taskRepository.findTasks(search, status, priority, tag, page, size, sortOption);
     }
 
     private void validateTask(Task task) {
