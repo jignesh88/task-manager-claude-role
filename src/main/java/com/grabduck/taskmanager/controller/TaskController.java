@@ -5,6 +5,7 @@ import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.domain.SortOption;
 import com.grabduck.taskmanager.dto.PagedResponseDto;
+import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.service.TaskService;
 import lombok.RequiredArgsConstructor;
@@ -32,14 +33,15 @@ public class TaskController {
     /**
      * Creates a new task.
      *
-     * @param task The task to create. Must not be null and must contain required fields (name, tags).
+     * @param request The task creation request. Must not be null and must contain required fields (name, priority, tags).
      * @return ResponseEntity containing the created task with HTTP status 201 (Created)
-     * @throws com.grabduck.taskmanager.exception.InvalidTaskException if the task is invalid
+     * @throws com.grabduck.taskmanager.exception.InvalidTaskException if the request is invalid
+     * @since 1.0
      */
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task) {
+    public ResponseEntity<Task> createTask(@RequestBody CreateTaskRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(taskService.createTask(task));
+                .body(taskService.createTask(request));
     }
 
     /**

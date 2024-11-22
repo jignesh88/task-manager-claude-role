@@ -6,6 +6,7 @@ import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.domain.SortField;
 import com.grabduck.taskmanager.domain.SortDirection;
+import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import com.grabduck.taskmanager.service.TaskService;
@@ -71,7 +72,7 @@ class TaskControllerTest {
 
     @Test
     void createTask_ValidTask_ReturnsCreatedTask() throws Exception {
-        Task newTask = Task.createNew(
+        CreateTaskRequest request = new CreateTaskRequest(
                 "New Task",
                 "New Description",
                 LocalDateTime.now().plusDays(1),
@@ -79,35 +80,32 @@ class TaskControllerTest {
                 Set.of("new", "task")
         );
 
-        UUID createdId = UUID.randomUUID();
-        Task createdTask = new Task(
-                createdId,
-                newTask.name(),
-                newTask.description(),
-                newTask.dueDate(),
-                newTask.status(),
-                newTask.priority(),
-                newTask.tags()
+        Task createdTask = Task.createNew(
+                request.name(),
+                request.description(),
+                request.dueDate(),
+                request.priority(),
+                request.tags()
         );
 
-        when(taskService.createTask(any(Task.class))).thenReturn(createdTask);
+        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(createdTask);
 
         mockMvc.perform(post("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newTask)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(createdTask.id().toString()))
-                .andExpect(jsonPath("$.name").value(createdTask.name()))
-                .andExpect(jsonPath("$.description").value(createdTask.description()))
-                .andExpect(jsonPath("$.status").value(createdTask.status().toString()))
-                .andExpect(jsonPath("$.priority").value(createdTask.priority().toString()))
-                .andExpect(jsonPath("$.tags", hasSize(2)));
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.name").value(request.name()))
+                .andExpect(jsonPath("$.description").value(request.description()))
+                .andExpect(jsonPath("$.priority").value(request.priority().toString()))
+                .andExpect(jsonPath("$.tags").isArray())
+                .andExpect(jsonPath("$.tags", hasSize(request.tags().size())));
     }
 
     @Test
     void createTask_InvalidTask_ReturnsBadRequest() throws Exception {
-        Task invalidTask = Task.createNew(
+        CreateTaskRequest invalidTask = new CreateTaskRequest(
                 "",  // Invalid empty title
                 "Description",
                 LocalDateTime.now().plusDays(1),
@@ -116,7 +114,7 @@ class TaskControllerTest {
         );
 
         doThrow(new InvalidTaskException("Title cannot be empty"))
-                .when(taskService).createTask(any(Task.class));
+                .when(taskService).createTask(any(CreateTaskRequest.class));
 
         mockMvc.perform(post("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON)

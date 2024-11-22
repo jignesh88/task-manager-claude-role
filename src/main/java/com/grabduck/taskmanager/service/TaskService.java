@@ -5,6 +5,7 @@ import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.domain.Page;
 import com.grabduck.taskmanager.domain.SortOption;
+import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import org.springframework.stereotype.Service;
@@ -25,14 +26,14 @@ public class TaskService {
             Set.of("sample", "dummy")
     );
 
-    public Task createTask(Task task) {
-        validateTask(task);
+    public Task createTask(CreateTaskRequest request) {
+        validateCreateTaskRequest(request);
         return Task.createNew(
-                task.name(),
-                task.description(),
-                task.dueDate(),
-                task.priority(),
-                task.tags()
+                request.name(),
+                request.description(),
+                request.dueDate(),
+                request.priority(),
+                request.tags()
         );
     }
 
@@ -154,6 +155,24 @@ public class TaskService {
         }
         if (task.dueDate() != null && task.dueDate().isBefore(LocalDateTime.now())) {
             throw new InvalidTaskException("Task due date cannot be in the past");
+        }
+    }
+
+    private void validateCreateTaskRequest(CreateTaskRequest request) {
+        if (request == null) {
+            throw new InvalidTaskException("Task request cannot be null");
+        }
+        if (request.name() == null || request.name().trim().isEmpty()) {
+            throw new InvalidTaskException("Task name cannot be empty");
+        }
+        if (request.name().length() > 255) {
+            throw new InvalidTaskException("Task name cannot be longer than 255 characters");
+        }
+        if (request.description() != null && request.description().length() > 1000) {
+            throw new InvalidTaskException("Task description cannot be longer than 1000 characters");
+        }
+        if (request.tags() == null || request.tags().isEmpty()) {
+            throw new InvalidTaskException("Task must have at least one tag");
         }
     }
 }
