@@ -6,8 +6,10 @@ import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.domain.Page;
 import com.grabduck.taskmanager.domain.SortOption;
 import com.grabduck.taskmanager.domain.SortDirection;
+import com.grabduck.taskmanager.repository.mongodb.MongoTaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -15,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Repository
+@ConditionalOnMissingBean(MongoTaskRepository.class)
 @RequiredArgsConstructor
 public class InMemoryTaskRepository implements TaskRepository {
     private final Map<UUID, Task> tasks = new ConcurrentHashMap<>();
