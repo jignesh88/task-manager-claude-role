@@ -2,7 +2,7 @@ package com.grabduck.taskmanager.domain;
 
 import lombok.NonNull;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public record Task(
@@ -12,10 +12,10 @@ public record Task(
     LocalDateTime dueDate,
     @NonNull TaskStatus status,
     @NonNull TaskPriority priority,
-    @NonNull List<String> tags
+    @NonNull Set<String> tags
 ) {
     public Task {
-        tags = List.copyOf(tags); // Make tags immutable
+        tags = Set.copyOf(tags); // Make tags immutable
     }
 
     // Factory method for creating a new task
@@ -24,7 +24,7 @@ public record Task(
             String description,
             LocalDateTime dueDate,
             @NonNull TaskPriority priority,
-            @NonNull List<String> tags) {
+            @NonNull Set<String> tags) {
         return new Task(
             UUID.randomUUID(),
             name,

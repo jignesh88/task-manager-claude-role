@@ -4,6 +4,7 @@ import com.grabduck.taskmanager.domain.Task;
 import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
 import com.grabduck.taskmanager.dto.PagedResponseDto;
+import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -63,6 +64,12 @@ public class TaskController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "dueDate,asc") String sort
     ) {
+        if (size < 1 || size > 100) {
+            throw new InvalidTaskException("Page size must be between 1 and 100");
+        }
+        if (page < 0) {
+            throw new InvalidTaskException("Page number cannot be negative");
+        }
         return ResponseEntity.ok(PagedResponseDto.from(
                 taskService.getTasks(search, status, priority, tag, page, size, sort)
         ));

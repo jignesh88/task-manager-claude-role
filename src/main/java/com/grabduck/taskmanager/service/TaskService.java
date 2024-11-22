@@ -9,8 +9,10 @@ import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -21,7 +23,7 @@ public class TaskService {
             "This is a sample task description",
             LocalDateTime.now().plusDays(7),
             TaskPriority.HIGH,
-            List.of("sample", "dummy")
+            Set.of("sample", "dummy")
     );
 
     public Task createTask(Task task) {
@@ -105,21 +107,21 @@ public class TaskService {
         }
 
         // Create a list of dummy tasks
-        List<Task> dummyTasks = Arrays.asList(
+        List<Task> dummyTasks = List.of(
                 DUMMY_TASK,
                 Task.createNew(
                         "Another Task",
                         "Another task description",
                         LocalDateTime.now().plusDays(3),
                         TaskPriority.MEDIUM,
-                        List.of("work", "important")
+                        Set.of("work", "important")
                 ),
                 Task.createNew(
                         "Urgent Task",
                         "This needs immediate attention",
                         LocalDateTime.now().plusDays(1),
                         TaskPriority.URGENT,
-                        List.of("urgent", "critical")
+                        Set.of("urgent", "critical")
                 )
         );
 
