@@ -59,6 +59,22 @@ The project is organized into feature branches, each representing a significant 
 
 - [`feature/task-api-foundation`](https://github.com/esurovtsev/task-manager/tree/feature/task-api-foundation): Initial API implementation with core task management functionality
   - [Watch the development video](https://youtu.be/BPaF68MU4aM?si=7NnMAw4zf2Ed6Zbe) to see how this foundation was built using Cascade AI Agent
+- [`feature/mongodb-persistence`](https://github.com/esurovtsev/task-manager/tree/feature/mongodb-persistence): MongoDB persistence layer implementation
+  - [Watch the development video](https://youtu.be/HO0VcvkWpPA?si=u9WjEj7a4io7jg3K) to see how MongoDB persistence was implemented using Cascade AI Agent
+  - This branch implements MongoDB persistence layer for the Task Manager application. Key features:
+    - MongoDB integration with Spring Data MongoDB
+    - Task document model and repository implementation
+    - Advanced task filtering and search capabilities using MongoDB queries
+    - Automatic database seeding with sample tasks on application startup
+    - Docker Compose configuration for MongoDB and Mongo Express
+
+  To run the application with MongoDB:
+  1. Start MongoDB using Docker Compose:
+     ```bash
+     docker compose up -d
+     ```
+  2. Access MongoDB Express UI at http://localhost:8081
+  3. Start the application - it will automatically connect to MongoDB and seed sample tasks
 - More branches will be added as new features are developed
 
 ## Getting Started
