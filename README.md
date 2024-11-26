@@ -18,6 +18,25 @@ This project showcases:
 
 ## Features
 
+- Task Management
+  - Create, read, update, and delete tasks
+  - Task properties: title, description, status, priority, due date
+  - Filter tasks by status and priority
+  - Sort tasks by various fields
+  - Pagination support
+
+- MongoDB Integration
+  - Persistent storage using MongoDB
+  - Automatic sample data seeding
+  - MongoDB Express UI for database management
+
+- Authentication & Authorization
+  - MongoDB-based user authentication
+  - Role-based access control (USER, ADMIN)
+  - BCrypt password encoding
+  - Basic authentication support
+  - Automatic test user creation
+
 ### Core API (Current)
 - RESTful API endpoints for task management
 - CRUD operations for tasks
@@ -75,6 +94,17 @@ The project is organized into feature branches, each representing a significant 
      ```
   2. Access MongoDB Express UI at http://localhost:8081
   3. Start the application - it will automatically connect to MongoDB and seed sample tasks
+- [`feature/user-auth`](https://github.com/esurovtsev/task-manager/tree/feature/user-auth): Implements user authentication and authorization using MongoDB:
+  - User domain model with roles (USER, ADMIN)
+  - MongoDB-based user repository
+  - Spring Security integration with MongoDB authentication
+  - Test user seeding for development
+  - BCrypt password encoding
+
+  Default test user credentials:
+  - Username: `user-new`
+  - Password: `123`
+  - Role: `USER`
 - More branches will be added as new features are developed
 
 ## Getting Started
@@ -96,6 +126,10 @@ mvn spring-boot:run
 The application will start on `http://localhost:8080`
 
 ## API Documentation
+
+All endpoints require Basic Authentication. Use the following credentials for testing:
+- Username: `user-new`
+- Password: `123`
 
 ### Available Endpoints
 
