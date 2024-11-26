@@ -17,23 +17,22 @@ public class TestSecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().authenticated()
-            )
-            .httpBasic();
-        
-        return http.build();
+        return http
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .userDetailsService(userDetailsService())
+                .httpBasic()
+                .and()
+                .build();
     }
 
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
         UserDetails user = User.builder()
-            .username("user")
-            .password(passwordEncoder().encode("password"))
-            .roles("USER")
-            .build();
+                .username("user")
+                .password(passwordEncoder().encode("password"))
+                .roles("USER")
+                .build();
         return new InMemoryUserDetailsManager(user);
     }
 
