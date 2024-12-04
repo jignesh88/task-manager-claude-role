@@ -1,6 +1,7 @@
 package com.grabduck.taskmanager.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.grabduck.taskmanager.config.TestSecurityConfig;
 import com.grabduck.taskmanager.domain.Task;
 import com.grabduck.taskmanager.domain.TaskPriority;
 import com.grabduck.taskmanager.domain.TaskStatus;
@@ -15,7 +16,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -31,10 +34,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TaskController.class)
+@Import(TestSecurityConfig.class)
 class TaskControllerTest {
 
     @Autowired
@@ -91,6 +96,7 @@ class TaskControllerTest {
         when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(createdTask);
 
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -117,6 +123,7 @@ class TaskControllerTest {
                 .when(taskService).createTask(any(CreateTaskRequest.class));
 
         mockMvc.perform(post("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidTask)))
                 .andExpect(status().isBadRequest())
@@ -128,7 +135,8 @@ class TaskControllerTest {
     void getTask_ExistingTask_ReturnsTask() throws Exception {
         when(taskService.getTaskById(testTaskId)).thenReturn(testTask);
 
-        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId))
+        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId)
+                        .with(httpBasic("user", "password")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(testTaskId.toString())))
                 .andExpect(jsonPath("$.name", is("Test Task")));
@@ -139,7 +147,8 @@ class TaskControllerTest {
         when(taskService.getTaskById(testTaskId))
                 .thenThrow(new TaskNotFoundException(testTaskId));
 
-        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId))
+        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId)
+                        .with(httpBasic("user", "password")))
                 .andExpect(status().isNotFound());
     }
 
@@ -166,6 +175,7 @@ class TaskControllerTest {
         when(taskService.updateTask(eq(testTaskId), any(Task.class))).thenReturn(updatedTask);
 
         mockMvc.perform(put("/api/v1/tasks/{taskId}", testTaskId)
+                        .with(httpBasic("user", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedTask)))
                 .andExpect(status().isOk())
@@ -175,7 +185,8 @@ class TaskControllerTest {
 
     @Test
     void deleteTask_ExistingTask_ReturnsNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId))
+        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId)
+                        .with(httpBasic("user", "password")))
                 .andExpect(status().isNoContent());
     }
 
@@ -184,7 +195,8 @@ class TaskControllerTest {
         doThrow(new TaskNotFoundException(testTaskId))
                 .when(taskService).deleteTask(testTaskId);
 
-        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId))
+        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId)
+                        .with(httpBasic("user", "password")))
                 .andExpect(status().isNotFound());
     }
 
@@ -204,6 +216,7 @@ class TaskControllerTest {
         )).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .param("page", "0")
                         .param("size", "10")
                         .param("sort", "dueDate,asc"))
@@ -217,6 +230,7 @@ class TaskControllerTest {
     @Test
     void getTasks_InvalidPageSize_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .param("page", "0")
                         .param("size", "1001"))
                 .andExpect(status().isBadRequest());
@@ -251,6 +265,7 @@ class TaskControllerTest {
         )).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .param("search", "Filtered")
                         .param("status", "NOT_STARTED")
                         .param("priority", "HIGH")
@@ -266,6 +281,7 @@ class TaskControllerTest {
     @Test
     void getTasks_InvalidSortField_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .param("sort", "invalidField,asc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("Unknown sort field")));
@@ -274,6 +290,7 @@ class TaskControllerTest {
     @Test
     void getTasks_InvalidSortDirection_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .param("sort", "dueDate,invalid"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("Unknown sort direction")));
@@ -282,6 +299,7 @@ class TaskControllerTest {
     @Test
     void getTasks_InvalidSortFormat_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
+                        .with(httpBasic("user", "password"))
                         .param("sort", "invalid-format"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("Sort string must be in format 'field,direction'")));
