@@ -7,7 +7,7 @@
 
 - [ ] Securing and Personalizing Task Management API
     - [x] add basic authentication
-    - [ ] add user support to MongoDB
+    - [x] add user support to MongoDB
     - [ ] new endpoint for creating users
     - [ ] assign tasks to users
     - [ ] restrict access to tasks by user
