@@ -105,6 +105,13 @@ The project is organized into feature branches, each representing a significant 
   - Username: `user-new`
   - Password: `123`
   - Role: `USER`
+- [`feature/user-registration-endpoint`](https://github.com/esurovtsev/task-manager/tree/feature/user-registration-endpoint): Implements secure user registration functionality:
+  - [Watch the development video: Build Secure User APIs with Windsurf AI](https://www.youtube.com/watch?v=iYAkj2Tk6BU)
+  - Secure user registration endpoint with password hashing
+  - User DTO with role management
+  - Global exception handling for registration errors
+  - Protection against user enumeration attacks
+  - Automatic USER role assignment for new users
 - More branches will be added as new features are developed
 
 ## Getting Started
