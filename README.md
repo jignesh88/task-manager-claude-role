@@ -140,6 +140,11 @@ All endpoints require Basic Authentication. Use the following credentials for te
 
 ### Available Endpoints
 
+#### Users
+- `POST /api/v1/users` - Register a new user (no authentication required)
+  - Request body: `{"username": "string", "password": "string", "email": "string"}`
+  - Returns: User details without password
+
 #### Tasks
 - `POST /api/v1/tasks` - Create a new task
 - `GET /api/v1/tasks` - Get paginated list of tasks with filtering options
