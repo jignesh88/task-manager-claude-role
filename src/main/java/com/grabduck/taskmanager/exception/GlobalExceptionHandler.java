@@ -104,6 +104,22 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(UserRegistrationException.class)
+    public ResponseEntity<ErrorResponseDto> handleUserRegistrationException(
+            UserRegistrationException ex,
+            HttpServletRequest request
+    ) {
+        return new ResponseEntity<>(
+                createErrorResponse(
+                        ex.getMessage(),
+                        HttpStatus.BAD_REQUEST,
+                        request.getRequestURI(),
+                        null
+                ),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGenericException(
             Exception ex,
