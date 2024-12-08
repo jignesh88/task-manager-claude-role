@@ -8,8 +8,12 @@
 - [ ] Securing and Personalizing Task Management API
     - [x] add basic authentication
     - [x] add user support to MongoDB
-    - [ ] new endpoint for creating users
+    - [x] new endpoint for creating users with secure password handling
+        - [x] password hashing with BCrypt
+        - [x] prevent user enumeration
+        - [x] automatic USER role assignment
+        - [x] global exception handling
     - [ ] assign tasks to users
     - [ ] restrict access to tasks by user
     - [ ] use JWT tokens for authentication
-    - [ ] enance API security
+    - [ ] enhance API security
