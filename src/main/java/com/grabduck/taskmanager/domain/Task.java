@@ -12,7 +12,8 @@ public record Task(
     LocalDateTime dueDate,
     @NonNull TaskStatus status,
     @NonNull TaskPriority priority,
-    @NonNull Set<String> tags
+    @NonNull Set<String> tags,
+    @NonNull UUID ownerId
 ) {
     public Task {
         tags = Set.copyOf(tags); // Make tags immutable
@@ -24,7 +25,8 @@ public record Task(
             String description,
             LocalDateTime dueDate,
             @NonNull TaskPriority priority,
-            @NonNull Set<String> tags) {
+            @NonNull Set<String> tags,
+            @NonNull UUID ownerId) {
         return new Task(
             UUID.randomUUID(),
             name,
@@ -32,7 +34,8 @@ public record Task(
             dueDate,
             TaskStatus.NOT_STARTED,
             priority,
-            tags
+            tags,
+            ownerId
         );
     }
 }

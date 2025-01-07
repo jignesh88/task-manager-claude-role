@@ -9,9 +9,12 @@ import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
 import com.grabduck.taskmanager.repository.TaskRepository;
+import com.grabduck.taskmanager.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,17 +27,37 @@ import java.util.Optional;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
     private static final Logger log = LoggerFactory.getLogger(TaskService.class);
+
+    private UUID getCurrentUserId() {
+        try {
+            String username = ((UserDetails) SecurityContextHolder.getContext()
+                    .getAuthentication().getPrincipal()).getUsername();
+            
+            return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalStateException("Current user not found"))
+                    .id();
+        } catch (Exception e) {
+            log.error("Failed to get current user ID", e);
+            throw new IllegalStateException("Failed to get current user ID", e);
+        }
+    }
 
     public Task createTask(CreateTaskRequest request) {
         try {
             validateCreateTaskRequest(request);
-            Task task = Task.createNew(
+            UUID ownerId = getCurrentUserId();
+            
+            Task task = new Task(
+                    UUID.randomUUID(),
                     request.name(),
                     request.description(),
                     request.dueDate(),
+                    TaskStatus.NOT_STARTED,
                     request.priority(),
-                    request.tags()
+                    request.tags(),
+                    ownerId
             );
             return taskRepository.save(task);
         } catch (Exception e) {
@@ -48,7 +71,8 @@ public class TaskService {
             if (taskId == null) {
                 throw new InvalidTaskException("Task ID cannot be null");
             }
-            return taskRepository.findById(taskId)
+            UUID currentUserId = getCurrentUserId();
+            return taskRepository.findById(taskId, currentUserId)
                     .orElseThrow(() -> new TaskNotFoundException(taskId));
         } catch (Exception e) {
             log.error("Failed to get task with id: {}", taskId, e);
@@ -62,13 +86,24 @@ public class TaskService {
                 throw new InvalidTaskException("Task ID cannot be null");
             }
             validateTask(task);
+            UUID currentUserId = getCurrentUserId();
             
-            // Verify task exists
-            if (!taskRepository.findById(taskId).isPresent()) {
-                throw new TaskNotFoundException(taskId);
-            }
+            // Verify task exists and belongs to current user
+            Task existingTask = taskRepository.findById(taskId, currentUserId)
+                    .orElseThrow(() -> new TaskNotFoundException(taskId));
             
-            return taskRepository.save(task);
+            Task updatedTask = new Task(
+                    existingTask.id(),
+                    task.name(),
+                    task.description(),
+                    task.dueDate(),
+                    task.status(),
+                    task.priority(),
+                    task.tags(),
+                    existingTask.ownerId() // Preserve the original owner
+            );
+            
+            return taskRepository.save(updatedTask);
         } catch (Exception e) {
             log.error("Failed to update task with id: {}", taskId, e);
             throw new RuntimeException("Failed to update task due to database error", e);
@@ -80,20 +115,20 @@ public class TaskService {
             if (taskId == null) {
                 throw new InvalidTaskException("Task ID cannot be null");
             }
+            UUID currentUserId = getCurrentUserId();
             
-            // Verify task exists before deletion
-            if (!taskRepository.findById(taskId).isPresent()) {
-                throw new TaskNotFoundException(taskId);
-            }
+            // Verify task exists and belongs to current user
+            taskRepository.findById(taskId, currentUserId)
+                    .orElseThrow(() -> new TaskNotFoundException(taskId));
             
-            taskRepository.deleteById(taskId);
+            taskRepository.deleteById(taskId, currentUserId);
         } catch (Exception e) {
             log.error("Failed to delete task with id: {}", taskId, e);
             throw new RuntimeException("Failed to delete task due to database error", e);
         }
     }
 
-    public Page<Task> getTasks(
+    public Page<Task> findTasks(
             String search,
             TaskStatus status,
             TaskPriority priority,
@@ -103,34 +138,20 @@ public class TaskService {
             SortOption sortOption
     ) {
         try {
-            return taskRepository.findTasks(search, status, priority, tag, page, size, sortOption);
+            UUID currentUserId = getCurrentUserId();
+            return taskRepository.findTasks(
+                    currentUserId,
+                    search,
+                    status,
+                    priority,
+                    tag,
+                    page,
+                    size,
+                    sortOption
+            );
         } catch (Exception e) {
             log.error("Failed to find tasks with filters: search={}, status={}, priority={}, tag={}", search, status, priority, tag, e);
             throw new RuntimeException("Failed to find tasks due to database error", e);
-        }
-    }
-
-    private void validateTask(Task task) {
-        if (task == null) {
-            throw new InvalidTaskException("Task cannot be null");
-        }
-        if (task.name() == null || task.name().trim().isEmpty()) {
-            throw new InvalidTaskException("Task name cannot be empty");
-        }
-        if (task.name().length() > 255) {
-            throw new InvalidTaskException("Task name cannot be longer than 255 characters");
-        }
-        if (task.description() != null && task.description().length() > 1000) {
-            throw new InvalidTaskException("Task description cannot be longer than 1000 characters");
-        }
-        if (task.tags() == null || task.tags().isEmpty()) {
-            throw new InvalidTaskException("Task must have at least one tag");
-        }
-        if (task.tags().size() > 10) {
-            throw new InvalidTaskException("Task cannot have more than 10 tags");
-        }
-        if (task.dueDate() != null && task.dueDate().isBefore(LocalDateTime.now())) {
-            throw new InvalidTaskException("Task due date cannot be in the past");
         }
     }
 
@@ -139,16 +160,34 @@ public class TaskService {
             throw new InvalidTaskException("Task request cannot be null");
         }
         if (request.name() == null || request.name().trim().isEmpty()) {
-            throw new InvalidTaskException("Task name cannot be empty");
+            throw new InvalidTaskException("Task name cannot be null or empty");
         }
-        if (request.name().length() > 255) {
-            throw new InvalidTaskException("Task name cannot be longer than 255 characters");
+        if (request.priority() == null) {
+            throw new InvalidTaskException("Task priority cannot be null");
         }
-        if (request.description() != null && request.description().length() > 1000) {
-            throw new InvalidTaskException("Task description cannot be longer than 1000 characters");
+        if (request.tags() == null) {
+            throw new InvalidTaskException("Task tags cannot be null");
         }
-        if (request.tags() == null || request.tags().isEmpty()) {
-            throw new InvalidTaskException("Task must have at least one tag");
+    }
+
+    private void validateTask(Task task) {
+        if (task == null) {
+            throw new InvalidTaskException("Task cannot be null");
+        }
+        if (task.name() == null || task.name().trim().isEmpty()) {
+            throw new InvalidTaskException("Task name cannot be null or empty");
+        }
+        if (task.status() == null) {
+            throw new InvalidTaskException("Task status cannot be null");
+        }
+        if (task.priority() == null) {
+            throw new InvalidTaskException("Task priority cannot be null");
+        }
+        if (task.tags() == null) {
+            throw new InvalidTaskException("Task tags cannot be null");
+        }
+        if (task.ownerId() == null) {
+            throw new InvalidTaskException("Task owner ID cannot be null");
         }
     }
 }

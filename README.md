@@ -112,6 +112,14 @@ The project is organized into feature branches, each representing a significant 
   - Global exception handling for registration errors
   - Protection against user enumeration attacks
   - Automatic USER role assignment for new users
+- [`feature/task-ownership-and-access-control`](https://github.com/esurovtsev/task-manager/tree/feature/task-ownership-and-access-control): Implements user-based task ownership and access control:
+  - [Watch the development video](https://www.youtube.com/watch?v=X9CKy6YqLYE) to see how task ownership and access control were implemented using Cascade AI Agent
+  - This branch implements secure task ownership and access control functionality. Key features:
+    - Task ownership tracking with ownerId field
+    - User-specific task access restrictions
+    - Owner-based CRUD operations validation
+    - Enhanced repository layer with owner-specific filtering
+    - Secure task management ensuring users can only access their own tasks
 - More branches will be added as new features are developed
 
 ## Getting Started

@@ -13,7 +13,7 @@
         - [x] prevent user enumeration
         - [x] automatic USER role assignment
         - [x] global exception handling
-    - [ ] assign tasks to users
-    - [ ] restrict access to tasks by user
+    - [x] assign tasks to users
+    - [x] restrict access to tasks by user
     - [ ] use JWT tokens for authentication
     - [ ] enhance API security

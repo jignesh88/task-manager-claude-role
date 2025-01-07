@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 @Primary
@@ -47,5 +49,12 @@ public interface MongoUserRepository extends MongoRepository<UserDocument, Strin
     @Override
     default void deleteById(UUID id) {
         deleteById(id.toString());
+    }
+
+    @Override
+    default List<User> findAllUsers() {
+        return findAll().stream()
+                .map(doc -> doc.toDomainUser())
+                .collect(Collectors.toList());
     }
 }
