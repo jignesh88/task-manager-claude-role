@@ -2,14 +2,11 @@ package com.grabduck.taskmanager.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grabduck.taskmanager.config.TestSecurityConfig;
-import com.grabduck.taskmanager.domain.Task;
-import com.grabduck.taskmanager.domain.TaskPriority;
-import com.grabduck.taskmanager.domain.TaskStatus;
-import com.grabduck.taskmanager.domain.SortField;
-import com.grabduck.taskmanager.domain.SortDirection;
+import com.grabduck.taskmanager.domain.*;
 import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
 import com.grabduck.taskmanager.exception.TaskNotFoundException;
+import com.grabduck.taskmanager.repository.UserRepository;
 import com.grabduck.taskmanager.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,22 +15,21 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -51,158 +47,189 @@ class TaskControllerTest {
     @MockBean
     private TaskService taskService;
 
+    @MockBean
+    private UserRepository userRepository;
+
     private Task testTask;
     private UUID testTaskId;
+    private UUID testOwnerId;
+    private UserDetails testUser;
+    private com.grabduck.taskmanager.domain.User testDomainUser;
 
     @BeforeEach
     void setUp() {
         testTaskId = UUID.randomUUID();
-        Task newTask = Task.createNew(
+        testOwnerId = UUID.randomUUID();
+        testTask = new Task(
+                testTaskId,
+                "Test Task",
+                "Test Description",
+                LocalDateTime.now().plusDays(1),
+                TaskStatus.NOT_STARTED,
+                TaskPriority.MEDIUM,
+                Set.of("test", "important"),
+                testOwnerId
+        );
+
+        testUser = User.withUsername("user")
+                .password("password")
+                .roles("USER")
+                .build();
+
+        testDomainUser = new com.grabduck.taskmanager.domain.User(
+                testOwnerId,
+                "user",
+                "password",
+                "user@example.com",
+                Set.of(UserRole.USER)
+        );
+
+        when(userRepository.findByUsername("user")).thenReturn(Optional.of(testDomainUser));
+
+        // Mock default behavior for findTasks
+        Page<Task> defaultPage = new Page<>(
+                List.of(testTask),
+                1L,
+                1,
+                10,
+                0
+        );
+        when(taskService.findTasks(
+                isNull(),
+                isNull(),
+                isNull(),
+                isNull(),
+                anyInt(),
+                anyInt(),
+                any(SortOption.class)
+        )).thenReturn(defaultPage);
+    }
+
+    @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void createTask_ValidTask_ReturnsCreatedTask() throws Exception {
+        CreateTaskRequest request = new CreateTaskRequest(
                 "Test Task",
                 "Test Description",
                 LocalDateTime.now().plusDays(1),
                 TaskPriority.MEDIUM,
-                Set.of("test", "unit-test")
-        );
-        testTask = new Task(
-                testTaskId,
-                newTask.name(),
-                newTask.description(),
-                newTask.dueDate(),
-                newTask.status(),
-                newTask.priority(),
-                newTask.tags()
-        );
-    }
-
-    @Test
-    void createTask_ValidTask_ReturnsCreatedTask() throws Exception {
-        CreateTaskRequest request = new CreateTaskRequest(
-                "New Task",
-                "New Description",
-                LocalDateTime.now().plusDays(1),
-                TaskPriority.LOW,
-                Set.of("new", "task")
+                Set.of("test", "important")
         );
 
-        Task createdTask = Task.createNew(
-                request.name(),
-                request.description(),
-                request.dueDate(),
-                request.priority(),
-                request.tags()
-        );
-
-        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(createdTask);
+        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(testTask);
 
         mockMvc.perform(post("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.name").value(request.name()))
-                .andExpect(jsonPath("$.description").value(request.description()))
-                .andExpect(jsonPath("$.priority").value(request.priority().toString()))
-                .andExpect(jsonPath("$.tags").isArray())
-                .andExpect(jsonPath("$.tags", hasSize(request.tags().size())));
+                .andExpect(jsonPath("$.id", is(testTaskId.toString())))
+                .andExpect(jsonPath("$.name", is("Test Task")))
+                .andExpect(jsonPath("$.description", is("Test Description")))
+                .andExpect(jsonPath("$.status", is("NOT_STARTED")))
+                .andExpect(jsonPath("$.priority", is("MEDIUM")))
+                .andExpect(jsonPath("$.tags", hasSize(2)))
+                .andExpect(jsonPath("$.ownerId", is(testOwnerId.toString())));
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     void createTask_InvalidTask_ReturnsBadRequest() throws Exception {
-        CreateTaskRequest invalidTask = new CreateTaskRequest(
-                "",  // Invalid empty title
-                "Description",
+        CreateTaskRequest request = new CreateTaskRequest(
+                "",
+                "Test Description",
                 LocalDateTime.now().plusDays(1),
-                TaskPriority.LOW,
-                Set.of("test")
+                TaskPriority.MEDIUM,
+                Set.of("test", "important")
         );
 
-        doThrow(new InvalidTaskException("Title cannot be empty"))
+        doThrow(new InvalidTaskException("Task name cannot be empty"))
                 .when(taskService).createTask(any(CreateTaskRequest.class));
 
         mockMvc.perform(post("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidTask)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.message").value("Title cannot be empty"));
+                .andExpect(jsonPath("$.message", containsString("Task name cannot be empty")));
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     void getTask_ExistingTask_ReturnsTask() throws Exception {
         when(taskService.getTaskById(testTaskId)).thenReturn(testTask);
 
-        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId)
-                        .with(httpBasic("user", "password")))
+        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(testTaskId.toString())))
-                .andExpect(jsonPath("$.name", is("Test Task")));
+                .andExpect(jsonPath("$.name", is("Test Task")))
+                .andExpect(jsonPath("$.description", is("Test Description")))
+                .andExpect(jsonPath("$.status", is("NOT_STARTED")))
+                .andExpect(jsonPath("$.priority", is("MEDIUM")))
+                .andExpect(jsonPath("$.tags", hasSize(2)))
+                .andExpect(jsonPath("$.ownerId", is(testOwnerId.toString())));
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     void getTask_NonExistingTask_ReturnsNotFound() throws Exception {
         when(taskService.getTaskById(testTaskId))
                 .thenThrow(new TaskNotFoundException(testTaskId));
 
-        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId)
-                        .with(httpBasic("user", "password")))
+        mockMvc.perform(get("/api/v1/tasks/{taskId}", testTaskId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     void updateTask_ExistingTask_ReturnsUpdatedTask() throws Exception {
-        Task newTask = Task.createNew(
-                "Updated Task",
-                "Updated Description",
-                testTask.dueDate(),
-                TaskPriority.HIGH,
-                Set.of("updated", "test")
-        );
-        
         Task updatedTask = new Task(
                 testTaskId,
-                newTask.name(),
-                newTask.description(),
-                newTask.dueDate(),
+                "Updated Task",
+                "Updated Description",
+                LocalDateTime.now().plusDays(2),
                 TaskStatus.IN_PROGRESS,
-                newTask.priority(),
-                newTask.tags()
+                TaskPriority.HIGH,
+                Set.of("updated", "important"),
+                testOwnerId
         );
 
         when(taskService.updateTask(eq(testTaskId), any(Task.class))).thenReturn(updatedTask);
 
         mockMvc.perform(put("/api/v1/tasks/{taskId}", testTaskId)
-                        .with(httpBasic("user", "password"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedTask)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(testTaskId.toString())))
                 .andExpect(jsonPath("$.name", is("Updated Task")))
-                .andExpect(jsonPath("$.status", is("IN_PROGRESS")));
+                .andExpect(jsonPath("$.description", is("Updated Description")))
+                .andExpect(jsonPath("$.status", is("IN_PROGRESS")))
+                .andExpect(jsonPath("$.priority", is("HIGH")))
+                .andExpect(jsonPath("$.tags", hasSize(2)))
+                .andExpect(jsonPath("$.ownerId", is(testOwnerId.toString())));
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     void deleteTask_ExistingTask_ReturnsNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId)
-                        .with(httpBasic("user", "password")))
+        doNothing().when(taskService).deleteTask(testTaskId);
+
+        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId))
                 .andExpect(status().isNoContent());
     }
 
     @Test
+    @WithMockUser(username = "user", password = "password", roles = "USER")
     void deleteTask_NonExistingTask_ReturnsNotFound() throws Exception {
         doThrow(new TaskNotFoundException(testTaskId))
                 .when(taskService).deleteTask(testTaskId);
 
-        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId)
-                        .with(httpBasic("user", "password")))
+        mockMvc.perform(delete("/api/v1/tasks/{taskId}", testTaskId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void getTasks_ValidParameters_ReturnsPagedResponse() throws Exception {
-        com.grabduck.taskmanager.domain.Page<Task> page = new com.grabduck.taskmanager.domain.Page<>(
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void findTasks_ValidParameters_ReturnsPagedResponse() throws Exception {
+        Page<Task> page = new Page<>(
                 List.of(testTask),
                 1L,
                 1,
@@ -210,13 +237,12 @@ class TaskControllerTest {
                 0
         );
 
-        when(taskService.getTasks(
-                any(), any(), any(), any(), eq(0), eq(10),
+        when(taskService.findTasks(
+                anyString(), any(TaskStatus.class), any(TaskPriority.class), anyString(), eq(0), eq(10),
                 argThat(sort -> sort.field() == SortField.DUE_DATE && sort.direction() == SortDirection.ASC)
         )).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .param("page", "0")
                         .param("size", "10")
                         .param("sort", "dueDate,asc"))
@@ -228,25 +254,29 @@ class TaskControllerTest {
     }
 
     @Test
-    void getTasks_InvalidPageSize_ReturnsBadRequest() throws Exception {
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void findTasks_InvalidPageSize_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .param("page", "0")
                         .param("size", "1001"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void getTasks_WithFilters_ReturnsFilteredTasks() throws Exception {
-        Task filteredTask = Task.createNew(
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void findTasks_WithFilters_ReturnsFilteredTasks() throws Exception {
+        Task filteredTask = new Task(
+                UUID.randomUUID(),
                 "Filtered Task",
                 "Filtered Description",
                 LocalDateTime.now().plusDays(1),
+                TaskStatus.NOT_STARTED,
                 TaskPriority.HIGH,
-                Set.of("filtered", "important")
+                Set.of("filtered", "important"),
+                testOwnerId
         );
 
-        com.grabduck.taskmanager.domain.Page<Task> page = new com.grabduck.taskmanager.domain.Page<>(
+        Page<Task> page = new Page<>(
                 List.of(filteredTask),
                 1L,
                 1,
@@ -254,18 +284,17 @@ class TaskControllerTest {
                 0
         );
 
-        when(taskService.getTasks(
+        when(taskService.findTasks(
                 eq("Filtered"),
                 eq(TaskStatus.NOT_STARTED),
                 eq(TaskPriority.HIGH),
-                any(),
+                isNull(),
                 eq(0),
                 eq(10),
-                any()
+                any(SortOption.class)
         )).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .param("search", "Filtered")
                         .param("status", "NOT_STARTED")
                         .param("priority", "HIGH")
@@ -279,29 +308,29 @@ class TaskControllerTest {
     }
 
     @Test
-    void getTasks_InvalidSortField_ReturnsBadRequest() throws Exception {
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void findTasks_InvalidSortField_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .param("sort", "invalidField,asc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("Unknown sort field")));
     }
 
     @Test
-    void getTasks_InvalidSortDirection_ReturnsBadRequest() throws Exception {
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void findTasks_InvalidSortDirection_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .param("sort", "dueDate,invalid"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message", containsString("Unknown sort direction")));
     }
 
     @Test
-    void getTasks_InvalidSortFormat_ReturnsBadRequest() throws Exception {
+    @WithMockUser(username = "user", password = "password", roles = "USER")
+    void findTasks_InvalidSortFormat_ReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
-                        .with(httpBasic("user", "password"))
                         .param("sort", "invalid-format"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("Sort string must be in format 'field,direction'")));
+                .andExpect(jsonPath("$.message", containsString("Invalid sort parameter: Sort string must be in format 'field,direction'")));
     }
 }

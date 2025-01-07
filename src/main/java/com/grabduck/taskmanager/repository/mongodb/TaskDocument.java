@@ -44,6 +44,10 @@ public class TaskDocument {
     @Indexed
     private Set<String> tags;
 
+    @Field("owner_id")
+    @Indexed  // Add index for efficient querying by owner
+    private String ownerId;
+
     @Field("created_at")
     private LocalDateTime createdAt;
 
@@ -51,26 +55,42 @@ public class TaskDocument {
     private LocalDateTime updatedAt;
 
     public TaskDocument(Task task) {
-        this.id = task.id().toString();
+        this.id = uuidToString(task.id());
         this.name = task.name();
         this.description = task.description();
         this.dueDate = task.dueDate();
         this.status = task.status();
         this.priority = task.priority();
         this.tags = Set.copyOf(task.tags());
+        this.ownerId = uuidToString(task.ownerId());
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }
 
     public Task toDomainTask() {
         return new Task(
-            UUID.fromString(id),
+            stringToUUID(id),
             name,
             description,
             dueDate,
             status,
             priority,
-            tags
+            tags,
+            stringToUUID(ownerId)
         );
+    }
+
+    /**
+     * Safely converts UUID to String, handling null values
+     */
+    private static String uuidToString(UUID uuid) {
+        return uuid != null ? uuid.toString() : null;
+    }
+
+    /**
+     * Safely converts String to UUID, handling null values
+     */
+    private static UUID stringToUUID(String str) {
+        return str != null ? UUID.fromString(str) : null;
     }
 }

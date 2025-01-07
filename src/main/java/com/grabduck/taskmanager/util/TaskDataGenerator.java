@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.UUID;
 
 @Slf4j
 public class TaskDataGenerator {
@@ -87,8 +88,12 @@ public class TaskDataGenerator {
         LocalDateTime dueDate = generateRandomDueDate();
         TaskPriority priority = generateRandomPriority();
         Set<String> taskTags = generateRandomTags();
+        
+        // Generate a random UUID for the owner
+        // In a real system, this would come from the actual user
+        UUID ownerId = UUID.randomUUID();
 
-        return Task.createNew(name, description, dueDate, priority, taskTags);
+        return Task.createNew(name, description, dueDate, priority, taskTags, ownerId);
     }
 
     private static String generateTaskName() {

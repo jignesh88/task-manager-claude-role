@@ -58,7 +58,7 @@ public class TaskController {
      * @throws com.grabduck.taskmanager.exception.InvalidTaskException if pagination parameters are invalid
      */
     @GetMapping
-    public ResponseEntity<PagedResponseDto<Task>> getTasks(
+    public ResponseEntity<PagedResponseDto<Task>> findTasks(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) TaskPriority priority,
@@ -82,7 +82,7 @@ public class TaskController {
         }
 
         return ResponseEntity.ok(PagedResponseDto.from(
-                taskService.getTasks(search, status, priority, tag, page, size, sortOption)
+                taskService.findTasks(search, status, priority, tag, page, size, sortOption)
         ));
     }
 
