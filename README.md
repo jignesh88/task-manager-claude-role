@@ -34,7 +34,7 @@ This project showcases:
   - MongoDB-based user authentication
   - Role-based access control (USER, ADMIN)
   - BCrypt password encoding
-  - Basic authentication support
+  - JWT authentication support
   - Automatic test user creation
 
 ### Core API (Current)
@@ -140,11 +140,71 @@ mvn spring-boot:run
 
 The application will start on `http://localhost:8080`
 
+## Authentication
+
+### JWT Authentication
+The application uses JWT (JSON Web Token) based authentication for secure API access. This replaces the previous Basic Authentication mechanism.
+
+#### Authentication Flow
+1. Client obtains a JWT token by authenticating with credentials
+2. Client includes the JWT token in subsequent requests
+3. Server validates the token and processes the request
+4. Token automatically expires after the configured duration
+
+#### Authentication Endpoints
+- `POST /api/v1/auth/login` - Obtain JWT token
+  - Request body: `{"username": "string", "password": "string"}`
+  - Returns: `{"token": "JWT_TOKEN", "type": "Bearer"}`
+
+#### Using JWT Authentication
+1. First, obtain a JWT token by calling the login endpoint
+2. Include the token in subsequent requests using the Authorization header:
+   ```
+   Authorization: Bearer <your_jwt_token>
+   ```
+
+#### Security Features
+- Secure token generation using SHA-256 encryption
+- Configurable token expiration (default: 24 hours)
+- Token blacklisting for logged-out tokens
+- Protection against common JWT attacks
+
+### Migration Guide from Basic Auth
+
+#### For API Clients
+1. Update authentication flow:
+   - Instead of sending credentials with each request, obtain a JWT token first
+   - Store the token securely
+   - Include token in Authorization header for subsequent requests
+
+2. Header format changes:
+   - Old: `Authorization: Basic base64(username:password)`
+   - New: `Authorization: Bearer jwt_token`
+
+3. Error handling:
+   - New error response for expired/invalid tokens: 401 Unauthorized
+   - Token refresh mechanism for expired tokens (coming soon)
+
+#### Breaking Changes
+- Basic Authentication is no longer supported
+- All API endpoints now require JWT Authentication
+- Authentication header format has changed
+- New authentication endpoint required for initial token acquisition
+
 ## API Documentation
 
-All endpoints require Basic Authentication. Use the following credentials for testing:
-- Username: `user-new`
-- Password: `123`
+### Authentication
+All endpoints (except user registration and login) require JWT Authentication. Include the JWT token in the Authorization header:
+```
+Authorization: Bearer your_jwt_token
+```
+
+To obtain a token, use the login endpoint with your credentials:
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user-new", "password": "123"}'
+```
 
 ### Available Endpoints
 

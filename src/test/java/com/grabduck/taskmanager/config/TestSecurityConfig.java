@@ -20,7 +20,6 @@ public class TestSecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .userDetailsService(userDetailsService())
                 .httpBasic()
                 .and()
                 .build();
