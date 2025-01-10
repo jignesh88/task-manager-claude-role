@@ -1,16 +1,28 @@
 openapi: 3.0.3
 info:
   title: Task Manager API
-  description: API for managing tasks with CRUD operations, filtering, and search capabilities
+  description: |
+    API for managing tasks with CRUD operations, filtering, and search capabilities.
+    
+    ## Authentication
+    This API uses JWT Bearer token for authentication. To access protected endpoints:
+    1. Obtain a JWT token using the /api/v1/auth/login endpoint
+    2. Include the token in the Authorization header of subsequent requests:
+       `Authorization: Bearer <your_token>`
   version: 1.0.0
 
 servers:
   - url: http://localhost:8080
     description: Local development server
 
+security:
+  - bearerAuth: []
+
 paths:
   /api/v1/tasks:
     post:
+      security:
+        - bearerAuth: []
       summary: Create a new task
       operationId: createTask
       requestBody:
@@ -40,6 +52,8 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     get:
+      security:
+        - bearerAuth: []
       summary: Get tasks with filtering, search, and pagination
       operationId: getTasks
       parameters:
@@ -106,6 +120,8 @@ paths:
           format: uuid
     
     get:
+      security:
+        - bearerAuth: []
       summary: Get task by ID
       operationId: getTaskById
       responses:
@@ -123,6 +139,8 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     put:
+      security:
+        - bearerAuth: []
       summary: Update existing task
       operationId: updateTask
       requestBody:
@@ -159,6 +177,8 @@ paths:
                 $ref: '#/components/schemas/Error'
     
     delete:
+      security:
+        - bearerAuth: []
       summary: Delete task
       operationId: deleteTask
       responses:
@@ -171,7 +191,70 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /api/v1/auth/login:
+    post:
+      security: []  # No authentication required for login
+      summary: Authenticate user and get JWT token
+      operationId: login
+      tags:
+        - authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/users:
+    post:
+      security: []  # No authentication required for registration
+      summary: Register a new user
+      operationId: registerUser
+      tags:
+        - authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Authorization header using the Bearer scheme.
+        Enter your token in the format: Bearer <token>
+  
   schemas:
     Task:
       type: object
@@ -243,3 +326,71 @@ components:
         details:
           type: object
           additionalProperties: true
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 3
+          maxLength: 100
+          format: password
+    
+    LoginResponse:
+      type: object
+      required:
+        - token
+        - type
+      properties:
+        token:
+          type: string
+          description: JWT token for authentication
+        type:
+          type: string
+          enum: [Bearer]
+          description: Token type
+    
+    UserRegistrationRequest:
+      type: object
+      required:
+        - username
+        - password
+        - email
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 3
+          maxLength: 100
+          format: password
+        email:
+          type: string
+          format: email
+    
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [USER, ADMIN]

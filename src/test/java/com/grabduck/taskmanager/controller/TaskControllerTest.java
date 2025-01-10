@@ -2,6 +2,7 @@ package com.grabduck.taskmanager.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grabduck.taskmanager.config.TestSecurityConfig;
+import com.grabduck.taskmanager.config.TestJwtConfig;
 import com.grabduck.taskmanager.domain.*;
 import com.grabduck.taskmanager.dto.CreateTaskRequest;
 import com.grabduck.taskmanager.exception.InvalidTaskException;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TaskController.class)
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, TestJwtConfig.class})
 class TaskControllerTest {
 
     @Autowired
