@@ -15,5 +15,31 @@
         - [x] global exception handling
     - [x] assign tasks to users
     - [x] restrict access to tasks by user
-    - [ ] use JWT tokens for authentication
+    - [x] use JWT tokens for authentication
+        - [x] add JWT dependencies and core classes
+            - [x] add JWT dependencies to pom.xml
+            - [x] create JwtProperties configuration
+            - [x] implement JwtTokenUtil
+            - [x] add unit tests for token utilities
+        - [x] implement authentication DTOs
+            - [x] create AuthenticationRequest/Response DTOs
+            - [x] implement JwtUserDetails
+            - [x] add validation and error handling
+        - [x] create JWT filter implementation
+            - [x] implement JwtAuthenticationFilter
+            - [x] add token extraction and validation
+            - [x] implement user authentication logic
+            - [x] add filter unit tests
+        - [x] add authentication endpoints
+            - [x] create AuthenticationController
+            - [x] implement login endpoint
+            - [x] add integration tests
+        - [x] update security configuration
+            - [x] configure JWT filter in security chain
+            - [x] remove Basic Auth configuration
+            - [x] update security endpoints configuration
+        - [x] update documentation and examples
+            - [x] add JWT authentication guide
+            - [x] update API documentation
+            - [x] add migration guide for clients
     - [ ] enhance API security
