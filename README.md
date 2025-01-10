@@ -121,7 +121,7 @@ The project is organized into feature branches, each representing a significant 
     - Enhanced repository layer with owner-specific filtering
     - Secure task management ensuring users can only access their own tasks
 - [`feature/jwt-auth-migration`](https://github.com/esurovtsev/task-manager/tree/feature/jwt-auth-migration): Implements JWT token-based authentication:
-  - [Watch the development video](https://youtu.be/PLACEHOLDER) to see how JWT authentication was implemented using Cascade AI Agent
+  - [Watch the development video](https://www.youtube.com/watch?v=ZlqpNfwjDhE) to see how JWT authentication was implemented using Cascade AI Agent
   - This branch migrates from Basic Authentication to JWT token-based authentication. Key features:
     - JWT token generation and validation
     - Secure authentication endpoints for token acquisition
