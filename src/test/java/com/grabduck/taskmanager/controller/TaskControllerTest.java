@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -117,7 +116,7 @@ class TaskControllerTest {
                 Set.of("test", "important")
         );
 
-        when(taskService.createTask(any(CreateTaskRequest.class))).thenReturn(testTask);
+        when(taskService.createTask(any(CreateTaskRequest.class), any(String.class))).thenReturn(testTask);
 
         mockMvc.perform(post("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -144,7 +143,7 @@ class TaskControllerTest {
         );
 
         doThrow(new InvalidTaskException("Task name cannot be empty"))
-                .when(taskService).createTask(any(CreateTaskRequest.class));
+                .when(taskService).createTask(any(CreateTaskRequest.class), any(String.class));
 
         mockMvc.perform(post("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
