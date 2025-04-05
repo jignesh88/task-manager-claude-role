@@ -44,9 +44,9 @@ public class TaskService {
         }
     }
 
-    public Task createTask(CreateTaskRequest request) {
+    public Task createTask(CreateTaskRequest request, String requestId) {
         try {
-            validateCreateTaskRequest(request);
+            validateCreateTaskRequest(request, requestId);
             UUID ownerId = getCurrentUserId();
             
             Task task = new Task(
@@ -61,7 +61,7 @@ public class TaskService {
             );
             return taskRepository.save(task);
         } catch (Exception e) {
-            log.error("Failed to create task: {}", request, e);
+            log.error("Failed to create task with requestId {}: {}", requestId, request, e);
             throw new RuntimeException("Failed to create task due to database error", e);
         }
     }
@@ -155,9 +155,12 @@ public class TaskService {
         }
     }
 
-    private void validateCreateTaskRequest(CreateTaskRequest request) {
+    private void validateCreateTaskRequest(CreateTaskRequest request, String requestId) {
         if (request == null) {
             throw new InvalidTaskException("Task request cannot be null");
+        }
+        if (requestId == null || requestId.trim().isEmpty()) {
+            throw new InvalidTaskException("Request ID cannot be null or empty");
         }
         if (request.name() == null || request.name().trim().isEmpty()) {
             throw new InvalidTaskException("Task name cannot be null or empty");

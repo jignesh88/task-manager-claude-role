@@ -40,8 +40,9 @@ public class TaskController {
      */
     @PostMapping
     public ResponseEntity<Task> createTask(@RequestBody CreateTaskRequest request) {
+        String requestId = UUID.randomUUID().toString();
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(taskService.createTask(request));
+                .body(taskService.createTask(request, requestId));
     }
 
     /**
