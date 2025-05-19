@@ -1,5 +1,6 @@
 package com.grabduck.taskmanager.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,4 +16,7 @@ public class AuthenticationRequestDto {
     
     @NotBlank(message = "Password cannot be empty")
     private String password;
+    
+    @Email(message = "Email should be valid")
+    private String email;
 }

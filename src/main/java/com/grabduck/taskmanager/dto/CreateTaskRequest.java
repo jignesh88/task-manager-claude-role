@@ -16,6 +16,7 @@ import java.util.Set;
  * @param dueDate     Optional deadline for the task completion.
  * @param priority    The priority level of the task. Must not be null.
  * @param tags        Set of tags associated with the task for categorization. Must not be null.
+ * @param user        User associated with the task. Must not be null.
  *
  * @since 1.0
  */
@@ -24,5 +25,6 @@ public record CreateTaskRequest(
     String description,
     LocalDateTime dueDate,
     @NonNull TaskPriority priority,
-    @NonNull Set<String> tags
+    @NonNull Set<String> tags,
+    @NonNull String user
 ) {}
